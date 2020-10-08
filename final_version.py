@@ -49,6 +49,43 @@ class Employee:
         return overlap
 
 
+"""sort_data
+
+Keyword arguments: class object dictionary
+argument -- Sorts the data from the file to a list of dictionaries of every couple, 
+which worked on the same project/s and for how long 
+Return: list of dictionaries
+
+"""
+
+
+def sort_data(employees):
+    best_couple = list()
+    time_work_together = 0
+    # Search through the employee class objects to see who worked on the same projects
+    for i in employees:
+        for d in employees:
+            # This will show couples mirrored as well, which is not an issue because bellow they are stored and checked in a list
+            if (employees[i].projID == employees[d].projID) and (employees[i].empID != employees[d].empID):
+                # Update the days worked
+                time_work_together = employees[i].TimeWorkedTogether(
+                    employees[d].dateFrom, employees[d].dateTo)
+                # If couple is not in the list, then add it
+                if next((item for item in best_couple if item["EmpID"] == [employees[i].empID, employees[d].empID]), None) is None:
+                    keys = ["EmpID", "ProjectID", "WorkingTime"]
+                    values = [[employees[i].empID, employees[d].empID],
+                              employees[d].projID, time_work_together]
+                    best_couple.append(dict(zip(keys, values)))
+                # If its in the list, check which couple it is and add the days to it and relevant project
+                else:
+                    for emps in best_couple:
+                        if emps["EmpID"] == [employees[i].empID, employees[d].empID]:
+                            emps["ProjectID"] += " " + \
+                                employees[d].projID
+                            emps["WorkingTime"] += time_work_together
+    return best_couple
+
+
 """find_winner
 
 Keyword arguments: employee_file
@@ -64,8 +101,6 @@ def find_winner(employee_file):
         file_employees = open(employee_file, "r")
         IDs = list()
         raw_data = list()
-        time_work_together = 0
-        best_couple = list()
 
         # If file is accecible then you can continue with the rest of the code
         if file_employees.readable():
@@ -84,27 +119,7 @@ def find_winner(employee_file):
             employees = {i: Employee(
                 d["EmpID"], d["ProjectID"], d["DateFrom"], d["DateTo"]) for i, d in enumerate(raw_data)}
 
-            # Search through the employee class objects to see who worked on the same projects
-            for i in employees:
-                for d in employees:
-                    # This will show couples mirrored as well, which is not an issue because bellow they are stored and checked in a list
-                    if (employees[i].projID == employees[d].projID) and (employees[i].empID != employees[d].empID):
-                        # Update the days worked
-                        time_work_together = employees[i].TimeWorkedTogether(
-                            employees[d].dateFrom, employees[d].dateTo)
-                        # If couple is not in the list, then add it
-                        if next((item for item in best_couple if item["EmpID"] == [employees[i].empID, employees[d].empID]), None) is None:
-                            keys = ["EmpID", "ProjectID", "WorkingTime"]
-                            values = [[employees[i].empID, employees[d].empID],
-                                      employees[d].projID, time_work_together]
-                            best_couple.append(dict(zip(keys, values)))
-                        # If its in the list, check which couple it is and add the days to it and relevant project
-                        else:
-                            for emps in best_couple:
-                                if emps["EmpID"] == [employees[i].empID, employees[d].empID]:
-                                    emps["ProjectID"] += " " + \
-                                        employees[d].projID
-                                    emps["WorkingTime"] += time_work_together
+            best_couple = sort_data(employees)
 
             # Find the most days worked by a couple on a mutual project and which one
             most_hours_worked = max([x["WorkingTime"] for x in best_couple])
@@ -115,7 +130,9 @@ def find_winner(employee_file):
                 f'Employees {best_couple[winner_index]["EmpID"][0]} and {best_couple[winner_index]["EmpID"][1]} worked together on project/s {best_couple[winner_index]["ProjectID"]} for {best_couple[winner_index]["WorkingTime"]} days in total')
             print("This is the longest a couple has worked on mutual projects!")
 
-            # If there is no file present catch the exceptipon
+        file_employees.close()
+
+        # If there is no file present catch the exceptipon
     except FileNotFoundError as error:
         print(error)
 
